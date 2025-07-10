@@ -1,46 +1,47 @@
-# AWS CloudFormation – 3-Tier Web Application Infrastructure
+# AWS CloudFormation 3-Tier Web Application Infrastructure
 
-This project defines 3-tier AWS architecture using [CloudFormation](https://aws.amazon.com/cloudformation/) It includes:
+This repository contains an AWS CloudFormation template that deploys a scalable, secure 3-tier web application architecture, including:
 
-- A custom VPC with public and private subnets
-- An EC2 web server with Apache installed
-- An RDS MySQL database in a private subnet
-- Secure networking components (IGW, security groups, route tables)
-
----
-
-# AWS Services Used
-
-- VPC, Subnets (Public + Private)
-- EC2 with UserData (Apache install)
-- RDS (MySQL, private subnet)
-- Internet Gateway, Route Tables, and Security Groups
-- CloudFormation (YAML template)
+- Custom VPC with public and private subnets  
+- EC2 instance running Apache web server in the public subnet  
+- RDS MySQL database instance in the private subnet  
+- Necessary networking components (Internet Gateway, Route Tables, Security Groups)
 
 ---
 
-# How to Deploy
+## Architecture Overview
 
-# Prerequisites
-- AWS account with sufficient permissions
-- A valid EC2 Key Pair in the deployment region
-- (Optional) AWS CLI installed if deploying via terminal
+VPC
+├── Public Subnet
+│ └── EC2 Instance (Apache Web Server)
+│ └── Security Group (Allow HTTP & SSH)
+│
+└── Private Subnet
+└── RDS MySQL Database
+└── Security Group (Allow MySQL only from EC2 SG)
 
----
+## Deployment
 
-# Deploy via AWS Console
+### Prerequisites
 
-1. Log in to the [AWS CloudFormation Console](https://console.aws.amazon.com/cloudformation/)
-2. Click **Create Stack** → **With new resources (standard)**
-3. Upload the `template.yaml` file from this repo
-4. Click **Next**, then enter:
-   - **Stack name** (e.g. `ThreeTierAppStack`)
-   - **KeyName** = Your EC2 Key Pair name
-5. Accept defaults → Acknowledge IAM warnings → Click **Create Stack**
-6. Wait for `CREATE_COMPLETE`
-7. Go to the **Outputs tab** of the stack:
-   - Copy and visit the EC2 **public IP** in your browser
-   - Save the **RDS endpoint** for backend use
+- AWS account with sufficient permissions  
+- Existing EC2 Key Pair in your AWS region  
+- AWS CLI installed and configured (optional for CLI deployment)
 
----
+### Deploy via AWS Management Console
 
+1. Navigate to [AWS CloudFormation Console](https://console.aws.amazon.com/cloudformation/).  
+2. Click **Create stack** > **With new resources (standard)**.  
+3. Upload `template.yaml`.  
+4. Provide a stack name (e.g., `aws-3tier-webapp`).  
+5. Enter your EC2 Key Pair name when prompted.  
+6. Review and create the stack.  
+7. Wait for the stack status to become `CREATE_COMPLETE`.  
+8. In the **Outputs** tab, find the public IP of the EC2 instance and the RDS endpoint.
+
+### Deploy via AWS CLI
+
+1. Update `deploy.sh` with your EC2 key pair and preferred AWS region.  
+2. Make the script executable:
+   ```bash
+   chmod +x deploy.sh
