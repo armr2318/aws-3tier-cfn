@@ -21,6 +21,8 @@ The deployed infrastructure includes:
     - RDS MySQL database instance
     - Security Group allowing MySQL (3306) access only from the EC2 security group
 
+---
+
 ## Deployment
 
 ### Prerequisites
