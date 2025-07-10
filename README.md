@@ -11,14 +11,15 @@ This repository contains an AWS CloudFormation template that deploys a scalable,
 
 ## Architecture Overview
 
-VPC
-├── Public Subnet
-│ └── EC2 Instance (Apache Web Server)
-│ └── Security Group (Allow HTTP & SSH)
-│
-└── Private Subnet
-└── RDS MySQL Database
-└── Security Group (Allow MySQL only from EC2 SG)
+The deployed infrastructure includes:
+
+- **VPC** containing two subnets:
+  - **Public Subnet**:
+    - EC2 instance running Apache web server
+    - Security Group allowing HTTP (80) and SSH (22) access
+  - **Private Subnet**:
+    - RDS MySQL database instance
+    - Security Group allowing MySQL (3306) access only from the EC2 security group
 
 ## Deployment
 
