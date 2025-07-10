@@ -48,3 +48,18 @@ The deployed infrastructure includes:
 2. Make the script executable:
    ```bash
    chmod +x deploy.sh
+Cleanup
+
+To delete all resources and avoid charges:
+
+    Via Console: Delete the stack in CloudFormation.
+
+    Via CLI:
+
+    aws cloudformation delete-stack --stack-name aws-3tier-webapp --region your-region
+
+Notes
+
+    The RDS password is hardcoded for demonstration purposes; use AWS Secrets Manager or Parameter Store for production workloads.
+
+    Verify the AMI ID in template.yaml matches your region.
