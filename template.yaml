@@ -1,10 +1,10 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: A basic AWS environment with one EC2 instance
+Description: AWS CloudFormation 3-Tier Web App with EC2 and RDS
 
 Parameters:
   KeyName:
     Type: AWS::EC2::KeyPair::KeyName
-    Description: Name of an existing EC2 KeyPair for SSH access
+    Description: Name of an existing EC2 KeyPair to enable SSH access
 
 Resources:
   MyVPC:
@@ -13,15 +13,18 @@ Resources:
       CidrBlock: 10.0.0.0/16
       EnableDnsSupport: true
       EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: MyVPC
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
 
-  GatewayAttachment:
+  AttachGateway:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
-      InternetGatewayId: !Ref InternetGateway
       VpcId: !Ref MyVPC
+      InternetGatewayId: !Ref InternetGateway
 
   PublicSubnet:
     Type: AWS::EC2::Subnet
@@ -30,31 +33,45 @@ Resources:
       CidrBlock: 10.0.1.0/24
       MapPublicIpOnLaunch: true
       AvailabilityZone: !Select [ 0, !GetAZs "" ]
+      Tags:
+        - Key: Name
+          Value: PublicSubnet
 
-  RouteTable:
+  PrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MyVPC
+      CidrBlock: 10.0.2.0/24
+      MapPublicIpOnLaunch: false
+      AvailabilityZone: !Select [ 1, !GetAZs "" ]
+      Tags:
+        - Key: Name
+          Value: PrivateSubnet
+
+  PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref MyVPC
 
   PublicRoute:
     Type: AWS::EC2::Route
-    DependsOn: GatewayAttachment
+    DependsOn: AttachGateway
     Properties:
-      RouteTableId: !Ref RouteTable
+      RouteTableId: !Ref PublicRouteTable
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
 
-  RouteTableAssociation:
+  PublicSubnetAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref PublicSubnet
-      RouteTableId: !Ref RouteTable
+      RouteTableId: !Ref PublicRouteTable
 
   WebSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
+      GroupDescription: Allow SSH and HTTP
       VpcId: !Ref MyVPC
-      GroupDescription: Allow HTTP and SSH
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
@@ -70,7 +87,7 @@ Resources:
     Properties:
       InstanceType: t2.micro
       KeyName: !Ref KeyName
-      ImageId: ami-0c2b8ca1dad447f8a  # Update for your region
+      ImageId: ami-0c2b8ca1dad447f8a # Amazon Linux 2 (verify for your region)
       SubnetId: !Ref PublicSubnet
       SecurityGroupIds:
         - !Ref WebSecurityGroup
@@ -81,9 +98,47 @@ Resources:
           yum install -y httpd
           systemctl start httpd
           systemctl enable httpd
-          echo "<h1>Hello from CloudFormation!</h1>" > /var/www/html/index.html
+          echo "<h1>Hello from CloudFormation EC2</h1>" > /var/www/html/index.html
+
+  RdsSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow MySQL from EC2 only
+      VpcId: !Ref MyVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          SourceSecurityGroupId: !Ref WebSecurityGroup
+
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnet group for RDS
+      SubnetIds:
+        - !Ref PrivateSubnet
+
+  MyDatabase:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AllocatedStorage: 20
+      DBInstanceClass: db.t3.micro
+      Engine: mysql
+      EngineVersion: 8.0.35
+      MasterUsername: adminuser
+      MasterUserPassword: Admin12345!
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      VPCSecurityGroups:
+        - !Ref RdsSecurityGroup
+      MultiAZ: false
+      PubliclyAccessible: false
+      BackupRetentionPeriod: 0
 
 Outputs:
   InstancePublicIP:
+    Description: Public IP of the EC2 web server
     Value: !GetAtt EC2Instance.PublicIp
-    Description: Public IP of EC2 instance
+
+  RDSEndpoint:
+    Description: RDS Database Endpoint
+    Value: !GetAtt MyDatabase.Endpoint.Address
